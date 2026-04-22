@@ -56,18 +56,25 @@ cd soldier-health-tracking
 npm install
 npm start
 
+---
 
 ### How It Works
 1. React app fetches data from Google Sheets every few seconds.
 2. Displays health metrics and GPS coordinates on dashboard.
 3. Triggers visual alerts if values exceed thresholds.
 
+---
+
 ### Important Notes
 - Academic prototype only, not for live deployment.
 - Replace Google Sheets with real backend for production.
 
+---
+
 ### Author
 Abhay Chouhan
+
+---
 
 ### License
 Educational use only. No warranty.

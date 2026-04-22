@@ -1,0 +1,168 @@
+import React, { useEffect, useState } from "react";
+import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
+import { RefreshCw, Menu, X } from "lucide-react"; // icons
+
+// ===================== GOOGLE MAP COMPONENT =====================
+const SoldierMap = ({ latitude, longitude }) => {
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY",
+  });
+
+  if (!isLoaded) return <p style={{ color: "white" }}>Loading map...</p>;
+
+  return (
+    <GoogleMap
+      zoom={15}
+      center={{ lat: latitude, lng: longitude }}
+      mapContainerStyle={{
+        width: "100%",
+        height: "350px",
+        borderRadius: "15px",
+        border: "3px solid #FFD700",
+      }}
+    >
+      <Marker position={{ lat: latitude, lng: longitude }} />
+    </GoogleMap>
+  );
+};
+
+// ===================== MAIN DASHBOARD =====================
+const SoldierHealthDashboard = () => {
+  const [data, setData] = useState([]);
+  const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
+  const [activePage, setActivePage] = useState("dashboard");
+
+  const theme = {
+    primary: "#18392B",
+    secondary: "#2E8B57",
+    accent: "#FFD700",
+    danger: "#FF0000",
+    success: "#06d6a0",
+  };
+
+  // ===================== FETCH GOOGLE SHEET DATA =====================
+  const fetchSheetData = async () => {
+    try {
+      const response = await fetch("YOUR_GOOGLE_SHEET_LINK");
+      const text = await response.text();
+      const rows = text.split("\n").map((r) => r.split(","));
+
+      const parsed = rows.slice(1).map((row) => ({
+        time: row[0],
+        heartRate: Number(row[1]),
+        spo2: Number(row[2]),
+        temp: Number(row[3]),
+        humidity: Number(row[4]),
+        latitude: Number(row[5]),
+        longitude: Number(row[6]),
+      }));
+
+      setData(parsed);
+
+      if (parsed.length > 0) {
+        const latest = parsed[parsed.length - 1];
+        setCoordinates({ lat: latest.latitude, lng: latest.longitude });
+      }
+    } catch (error) {
+      console.log("Error reading sheet:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSheetData();
+    const interval = setInterval(fetchSheetData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ===================== PAGE VIEW =====================
+  const DashboardView = () => (
+    <div style={{ color: "white", padding: "12px" }}>
+      <h2 style={{ color: theme.accent }}>🪖 Soldier Command Dashboard</h2>
+
+      <div style={{ marginTop: "20px" }}>
+        <h3 style={{ color: theme.accent }}>📍 Live GPS Tracking</h3>
+        {coordinates.lat && coordinates.lng ? (
+          <SoldierMap latitude={coordinates.lat} longitude={coordinates.lng} />
+        ) : (
+          <p style={{ color: "gray" }}>Waiting for GPS Data...</p>
+        )}
+      </div>
+
+      <div style={{ marginTop: "30px" }}>
+        <h3 style={{ color: theme.accent }}>📊 Latest Readings:</h3>
+        {data.length > 0 ? (
+          <div style={{ padding: "15px", background: "#1E1E1E", borderRadius: "10px" }}>
+            <p>❤️ Heart Rate: {data[data.length - 1].heartRate} bpm</p>
+            <p>🫁 SpO2: {data[data.length - 1].spo2}%</p>
+            <p>🌡 Temperature: {data[data.length - 1].temp}°C</p>
+            <p>💧 Humidity: {data[data.length - 1].humidity}%</p>
+          </div>
+        ) : (
+          <p style={{ color: "gray" }}>No data yet...</p>
+        )}
+      </div>
+    </div>
+  );
+
+  // ===================== LAYOUT =====================
+  return (
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        background: "#0f172a",
+        color: "white",
+      }}
+    >
+      {/* Sidebar */}
+      <div
+        style={{
+          width: "220px",
+          background: "#11291E",
+          padding: "20px",
+          borderRight: "2px solid #FFD700",
+        }}
+      >
+        <h2 style={{ color: theme.accent }}>⚔️ Tactical UI</h2>
+
+        <button
+          onClick={() => setActivePage("dashboard")}
+          style={{
+            width: "100%",
+            padding: "12px",
+            marginTop: "10px",
+            background: "#FFD700",
+            border: "none",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Dashboard
+        </button>
+
+        <button
+          onClick={fetchSheetData}
+          style={{
+            width: "100%",
+            padding: "12px",
+            marginTop: "20px",
+            background: theme.secondary,
+            border: "none",
+            color: "white",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          <RefreshCw size={16} /> Refresh Data
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "15px" }}>
+        {activePage === "dashboard" && <DashboardView />}
+      </div>
+    </div>
+  );
+};
+
+export default SoldierHealthDashboard;
